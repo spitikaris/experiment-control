@@ -12,8 +12,7 @@ def menu ():
 	print "(1) Direct Control"
 	print "(2) Start Compression experiment"
 	print "(3) Start Decompression experiment"
-	print "(4) Move forward"
-	print "(5) Move backward\n"
+	print "(4) Start HR image capture"
 	print "(0) Exit\n"
 
 	return input("Your selection: ")
@@ -47,7 +46,7 @@ def init ():
 	print("Moving camera holder to start position")
 	send('4','turning_holder..done')
 		
-
+mode=0
 user_input = 1
 ser = serial.Serial('/dev/ttyACM0', 9600)
 while (user_input!=0):
@@ -55,11 +54,10 @@ while (user_input!=0):
 	
 	if user_input == 1:
 		print("Starting direct control mode...")
-		connect ('1')
-		ser.write('2')
-		raw_input("Direct control mode is active. Hit RETURN to exit.")
-		print("Waiting for shutdown...")
-		waitForArduino('stopped')
+		if (mode != 1):
+			os.system("(cd /home/pi/Documents/Arduino/StepperControlIno/; ino upload)")
+		mode = 1
+		print("Direct control is active.")
 	elif user_input == 2:
 		connect('2')
 		print("Compression experiment...")
@@ -109,6 +107,10 @@ while (user_input!=0):
 		print("Enter password on mp-tresca to copy images in home directory")
 		os.system("scp -r "+expName+ " spitikaris@mp-tresca:FNA/data/")  
 	elif user_input == 3:
+		if mode != 3:
+			os.system("(cd /home/pi/Documents/Arduino/DecompressionIno/; ino upload)")
+		mode = 3
+		send('0', 'stopping compression')
 		connect('3')
 		print("Decompression experiment...")
 		expName = raw_input("Enter name of experiment: ")
@@ -157,39 +159,30 @@ while (user_input!=0):
 		print("Enter password on mp-tresca to copy images in home directory")
 		os.system("scp -r "+expName+ " spitikaris@mp-tresca:FNA/data/")  
 	elif user_input == 4:
-		wall = input("Which wall shall be moved? (1) | (2) | (B)oth")
-		connect('4')
-		if wall == 1:
-			print "Moving wall 1..."
-			send('1', 'wall..check')
-		elif wall == 2:
-			ser.write('2')
-		elif wall == 'B':
-			ser.write('3')
-		position = input("How many steps?: ")
-		ser.write(len(str(position)))
-		waitForArduino('digit_length..check');
-		ser.write(position)
-		waitForArduino('position..check')
-		waitForArduino('done')
-		print('Position was set.')
+		print "HR image capture mode"
+		if mode != 4:
+			os.system("(cd /home/pi/Documents/Arduino/DecompressionIno/; ino upload)")
+		connect('3')
+		send('4','turning_holder..done')
+		while button != "q":
+			os.system("sudo sispmctl -o 1")
+			os.system("sudo sispmctl -o 2")
+			os.system("sudo sispmctl -f 3")
+			os.system("gphoto2 --set-config-index /main/capturesettings/shutterspeed=12 --capture-image-and-download --filename='"+expName+"/"+expName+str(ctr)+".jpg' 2>/dev/null")
+			send('4','turning_holder..done')
+			os.system("sudo sispmctl -f 1")
+			os.system("sudo sispmctl -f 2")
+			os.system("sudo sispmctl -o 3")
+			time.sleep(1000)
+			os.system("gphoto2 --set-config-index /main/capturesettings/shutterspeed=12 --capture-image-and-download --filename='"+expName+"/"+expName+str(ctr)+".jpg' 2>/dev/null")
+			send('4','turning_holder..done')
+			button = raw_input("Press any button to continue but 'q' for leaving");
 	elif user_input == 5:
-		wall = input("Which wall shall be moved? (1) | (2) | (B)oth")
-		connect('5')
-		if wall == 1:
-			ser.write('1')
-		elif wall == 2:
-			ser.write('2')
-		elif wall == 'B':
-			ser.write('3')
-		waitForArduino('wall..check')
-		position = input("How many steps?: ")
-		ser.write(len(str(position)))
-		waitForArduino('digit_length..check');
-		ser.write(position)
-		waitForArduino('position..check')
-		waitForArduino('done')
-		print('Position was set.')
+		if mode != 5:
+			os.system("(cd /home/pi/Documents/Arduino/Ino/; ino upload)")
+		mode = 5
+		print "Uploading single wall control"
+
 
 		
 			
