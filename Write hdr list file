@@ -1,2 +1,0 @@
-f=fopen("tempFileList.txt","w")
-fwrite("tmp"+ctr+".jpg\t"+str(shctr)+"\n")
