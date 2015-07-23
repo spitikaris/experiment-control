@@ -159,10 +159,13 @@ while (user_input!=0):
 		print("Enter password on mp-tresca to copy images in home directory")
 		os.system("scp -r "+expName+ " spitikaris@mp-tresca:FNA/data/")
 	elif user_input == 4:
-		ctr=1
+		ctr=0
 		print "HDRI capture mode"
 		if mode != 4:
 			os.system("(cd /home/pi/Documents/Arduino/DecompressionIno/; ino upload)")
+                        print "Establishing connection to Arduino..."
+                        time.sleep(3);
+                        ser = serial.Serial('/dev/ttyACM0', 9600)
 		connect('3')
 		send('4','turning_holder..done')
 		print "Enter shutter time choices. Press 'c' to continue: "
@@ -171,28 +174,32 @@ while (user_input!=0):
 		while enteredNo != "c":
 			shutterTimes.append(enteredNo)
 			enteredNo = raw_input("Next number (c to exit): ")
+                print("shutter time choices are ")
+                print ', '.join(shutterTimes)
 		os.system("mkdir hdr_src")
+                button = "0"
 		while button != "q":
 			ctr=ctr+1
-			os.system("mkdir "+ctr)
-			os.system("cp list.txt "+ctr+"/")
+			os.system("mkdir hdr_src/"+str(ctr))
+			os.system("cp list.txt hdr_src/"+str(ctr)+"/")
 			os.system("sudo sispmctl -o 1")
 			os.system("sudo sispmctl -o 2")
 			os.system("sudo sispmctl -f 3")
 			for i in shutterTimes:
-				os.system("gphoto2 --set-config-index /main/capturesettings/shutterspeed="+i+" --capture-image-and-download --filename=hdr_src/'"+ctr+"/"+i+".jpg' 2>/dev/null")
+                            print "gphoto2 --set-config-index /main/capturesettings/shutterspeed="+i+" --capture-image-and-download --filename='hdr_src/"+str(ctr)+"/"+i+".jpg' 2>/dev/null"
+                            os.system("gphoto2 --set-config-index /main/capturesettings/shutterspeed="+i+" --capture-image-and-download --filename='hdr_src/"+str(ctr)+"/"+i+".jpg' 2>/dev/null")
 			ctr=ctr+1
-			os.system("mkdir "+ctr)
-			os.system("cp list.txt "+ctr+"/")
+			os.system("mkdir hdr_src/"+str(ctr))
+			os.system("cp list.txt hdr_src/"+str(ctr)+"/")
 			send('4','turning_holder..done')
 			os.system("sudo sispmctl -f 1")
 			os.system("sudo sispmctl -f 2")
 			os.system("sudo sispmctl -o 3")
-			time.sleep(1000)
+			time.sleep(1)
 			shctr=1
 			for i in shutterTimes:
 				shctr = shctr+1
-				os.system("gphoto2 --set-config-index /main/capturesettings/shutterspeed="+i+" --capture-image-and-download --filename=hdr_src/'"+ctr+"/"+i+".jpg' 2>/dev/null")
+				os.system("gphoto2 --set-config-index /main/capturesettings/shutterspeed="+i+" --capture-image-and-download --filename='hdr_src/"+str(ctr)+"/"+i+".jpg' 2>/dev/null")
 			send('4','turning_holder..done')
 			button = raw_input("Press any button to continue but 'q' for leaving");
 	elif user_input == 5:
