@@ -23,10 +23,10 @@ def connect (item):
 	while 'Hello Pi' not in response:
 		ser.write(item)
 		response = ser.readline()
-		print "Arduino: " + response 
+		print "Arduino: " + response
 	print("Connection established.")
-	
-	
+
+
 def send (signal, check):
 	response = ''
 	while check not in response:
@@ -45,13 +45,13 @@ def init ():
 	print("Initializing Arduino...")
 	print("Moving camera holder to start position")
 	send('4','turning_holder..done')
-		
+
 mode=0
 user_input = 1
 ser = serial.Serial('/dev/ttyACM0', 9600)
 while (user_input!=0):
 	user_input = menu()
-	
+
 	if user_input == 1:
 		print("Starting direct control mode...")
 		if (mode != 1):
@@ -87,7 +87,7 @@ while (user_input!=0):
 			ctr=ctr+1
 			time.sleep(2)
 			send('4', 'turning_holder..done')
-			print("Going to new position...") 
+			print("Going to new position...")
 			for i in range(1, stepsPerStep+1, 1):
 				send('6', 'step..done');
 				position = position + 1
@@ -105,7 +105,7 @@ while (user_input!=0):
 		os.system("sudo sispmctl -f 4")
 		print ("Motor and Stepper power turned off")
 		print("Enter password on mp-tresca to copy images in home directory")
-		os.system("scp -r "+expName+ " spitikaris@mp-tresca:FNA/data/")  
+		os.system("scp -r "+expName+ " spitikaris@mp-tresca:FNA/data/")
 	elif user_input == 3:
 		if mode != 3:
 			os.system("(cd /home/pi/Documents/Arduino/DecompressionIno/; ino upload)")
@@ -139,7 +139,7 @@ while (user_input!=0):
 			ctr=ctr+1
 			time.sleep(2)
 			send('4', 'turning_holder..done')
-			print("Going to new position...") 
+			print("Going to new position...")
 			for i in range(1, stepsPerStep+1, 1):
 				send('6', 'step..done');
 				position = position + 1
@@ -157,24 +157,42 @@ while (user_input!=0):
 		os.system("sudo sispmctl -f 4")
 		print ("Motor and Stepper power turned off")
 		print("Enter password on mp-tresca to copy images in home directory")
-		os.system("scp -r "+expName+ " spitikaris@mp-tresca:FNA/data/")  
+		os.system("scp -r "+expName+ " spitikaris@mp-tresca:FNA/data/")
 	elif user_input == 4:
-		print "HR image capture mode"
+		ctr=1
+		print "HDRI capture mode"
 		if mode != 4:
 			os.system("(cd /home/pi/Documents/Arduino/DecompressionIno/; ino upload)")
 		connect('3')
 		send('4','turning_holder..done')
+		print "Enter shutter time choices. Press 'c' to continue: "
+		enteredNo = raw_input("Next number (c to exit): ")
+		shutterTimes = []
+		while enteredNo != "c":
+			shutterTimes.append(enteredNo)
+			enteredNo = raw_input("Next number (c to exit): ")
+		os.system("mkdir hdr_src")
 		while button != "q":
+			ctr=ctr+1
+			os.system("mkdir "+ctr)
+			os.system("cp list.txt "+ctr+"/")
 			os.system("sudo sispmctl -o 1")
 			os.system("sudo sispmctl -o 2")
 			os.system("sudo sispmctl -f 3")
-			os.system("gphoto2 --set-config-index /main/capturesettings/shutterspeed=12 --capture-image-and-download --filename='"+expName+"/"+expName+str(ctr)+".jpg' 2>/dev/null")
+			for i in shutterTimes:
+				os.system("gphoto2 --set-config-index /main/capturesettings/shutterspeed="+i+" --capture-image-and-download --filename=hdr_src/'"+ctr+"/"+i+".jpg' 2>/dev/null")
+			ctr=ctr+1
+			os.system("mkdir "+ctr)
+			os.system("cp list.txt "+ctr+"/")
 			send('4','turning_holder..done')
 			os.system("sudo sispmctl -f 1")
 			os.system("sudo sispmctl -f 2")
 			os.system("sudo sispmctl -o 3")
 			time.sleep(1000)
-			os.system("gphoto2 --set-config-index /main/capturesettings/shutterspeed=12 --capture-image-and-download --filename='"+expName+"/"+expName+str(ctr)+".jpg' 2>/dev/null")
+			shctr=1
+			for i in shutterTimes:
+				shctr = shctr+1
+				os.system("gphoto2 --set-config-index /main/capturesettings/shutterspeed="+i+" --capture-image-and-download --filename=hdr_src/'"+ctr+"/"+i+".jpg' 2>/dev/null")
 			send('4','turning_holder..done')
 			button = raw_input("Press any button to continue but 'q' for leaving");
 	elif user_input == 5:
@@ -182,7 +200,3 @@ while (user_input!=0):
 			os.system("(cd /home/pi/Documents/Arduino/Ino/; ino upload)")
 		mode = 5
 		print "Uploading single wall control"
-
-
-		
-			
