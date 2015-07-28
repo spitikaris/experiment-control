@@ -4,6 +4,7 @@ import time
 import serial
 from PIL import Image
 from PIL.ExifTags import TAGS
+import RPi.GPIO as GPIO
 
 class bcolors:
     HEADER = '\033[95m'
@@ -51,7 +52,7 @@ def connect (item):
 	while 'Hello Pi' not in response:
 		ser.write(item)
 		response = ser.readline()
-		print bcolors.RECEIVE "Arduino: " + response + bcolors.ENDC
+		print bcolors.RECEIVE + "Arduino: " + response + bcolors.ENDC
 	print("Connection established.")
 
 
@@ -64,16 +65,42 @@ def send (signal, check):
 		print str(response)
         print bcolors.RECEIVE + "Signal received." + bcolors.ENDC
 
+def turn_holder (aim):
+    print(bcolors.HEADER + "Turning camera holder" + bcolors.ENDC)
+    if aim=='cover':
+        Servo.start(10)
+        for ctr in range(1,90):
+            time.sleep(0.01)
+    elif aim!='cover':
+        Servo.start(5)
+        for ctr in range(1,90):
+            time.sleep(0.01)
+    Servo.stop()
+
+
+
 def waitForArduino (word):
 	response = ''
 	while word not in response:
 		ser.write('0')
 		response = ser.readline()
-
+Servo=[]
 def init ():
 	print(bcolors.HEADER + "Initializing Arduino...")
 	print("Moving camera holder to start position")
-	send('4','turning_holder..done' + bcolors.ENDC)
+        GPIO.setmode(GPIO.BOARD)
+        GPIO.setwarnings(False)
+        GPIO.setup(40,GPIO.OUT)
+        Servo=GPIO.PWM(40,50)
+	#send('4','turning_holder..done' + bcolors.ENDC)
+        Servo.start(7)
+        time.sleep(1)
+        Servo.stop()
+        Servo.start(10)
+        for Counter in range(20):
+            time.sleep(0.01);
+        Servo.stop()
+
 
 mode=0
 user_input = 1
@@ -188,6 +215,7 @@ while (user_input!=0):
 		print("Enter password on mp-tresca to copy images in home directory")
 		os.system("scp -r "+expName+ " spitikaris@mp-tresca:FNA/data/")
 	elif user_input == 4:
+                turn_holder('uncover')
 		ctr=0
 		print "HDRI capture mode"
 		if mode != 4:
@@ -196,7 +224,6 @@ while (user_input!=0):
                         ser = serial.Serial('/dev/ttyACM0', 9600)
                         time.sleep(3);
 		connect('4')
-		send('4','turning_holder..done')
 		print "Enter shutter time choices. Press 'c' to continue: "
 		enteredNo = raw_input("Next number (c to exit): ")
 		shutterTimes = []
@@ -219,22 +246,22 @@ while (user_input!=0):
 			for i in shutterTimes:
                             print bcolors.SEND + "gphoto2 --set-config-index /main/capturesettings/shutterspeed="+i+" --capture-image-and-download --filename='hdr_src/"+str(ctr)+"/"+i+".jpg' 2>/dev/null" + bcolors.ENDC
                             os.system("gphoto2 --set-config-index /main/capturesettings/shutterspeed="+i+" --capture-image-and-download --filename='hdr_src/"+str(ctr)+"/"+i+".jpg' 2>/dev/null")
-            writeLists("hdr_src/"+str(ctr)+"/")
+                        writeLists("hdr_src/"+str(ctr)+"/")
 			ctr=ctr+1
 			os.system("mkdir hdr_src/"+str(ctr))
 			#os.system("cp list.txt hdr_src/"+str(ctr)+"/")
+                        turn_holder('cover')
 			send('4','turning_holder..done')
 			os.system("sudo sispmctl -f 1")
 			os.system("sudo sispmctl -f 2")
 			os.system("sudo sispmctl -o 3")
 			time.sleep(3)
-			shctr=1
 			for i in shutterTimes:
 				shctr = shctr+1
 				os.system("gphoto2 --set-config-index /main/capturesettings/shutterspeed="+i+" --capture-image-and-download --filename='hdr_src/"+str(ctr)+"/"+i+".jpg' 2>/dev/null")
-            writeLists("hdr_src/"+str(ctr)+"/")
-			send('4','turning_holder..done')
-            send('1',"button_pressed..done")
+                        writeLists("hdr_src/"+str(ctr)+"/")
+                        turn_holder('uncover')
+                        send('1',"button_pressed..done")
 			#button = raw_input("Press any button to continue but 'q' for leaving");
 
 	elif user_input == 5:
