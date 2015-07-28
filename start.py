@@ -2,7 +2,25 @@
 import os
 import time
 import serial
+from PIL import Image
+from PIL.ExifTags import TAGS
 
+def writeLists (D):
+    outfile = open(D+"list.txt",'w')
+    for f in os.listdir(D):
+        if f.endswith(".jpg"):
+
+            img = Image.open(D+f)
+            exif_data = {}
+            info = img._getexif()
+            for tag, value in info.items():
+                decoded = TAGS.get(tag,tag)
+                exif_data[decoded] = value
+
+            nominator = exif_data["ExposureTime"][1]/exif_data["ExposureTime"][0]
+
+            outfile.write(f  +"\t" +str(nominator)+"\n")
+    outfile.close()
 
 def menu ():
 	print "--------------------------------------------------------------"
@@ -34,6 +52,7 @@ def send (signal, check):
 		ser.write(signal)
 		response = ser.readline()
 		print str(response)
+        print "Signal received."
 
 def waitForArduino (word):
 	response = ''
@@ -109,8 +128,8 @@ while (user_input!=0):
 	elif user_input == 3:
 		if mode != 3:
 			os.system("(cd /home/pi/Documents/Arduino/DecompressionIno/; ino upload)")
+                        ser = serial.Serial('/dev/ttyACM0', 9600)
 		mode = 3
-		send('0', 'stopping compression')
 		connect('3')
 		print("Decompression experiment...")
 		expName = raw_input("Enter name of experiment: ")
@@ -162,11 +181,11 @@ while (user_input!=0):
 		ctr=0
 		print "HDRI capture mode"
 		if mode != 4:
-			os.system("(cd /home/pi/Documents/Arduino/DecompressionIno/; ino upload)")
+			os.system("(cd /home/pi/Documents/Arduino/hdriIno/; ino upload)")
                         print "Establishing connection to Arduino..."
-                        time.sleep(3);
                         ser = serial.Serial('/dev/ttyACM0', 9600)
-		connect('3')
+                        time.sleep(3);
+		connect('4')
 		send('4','turning_holder..done')
 		print "Enter shutter time choices. Press 'c' to continue: "
 		enteredNo = raw_input("Next number (c to exit): ")
@@ -178,30 +197,36 @@ while (user_input!=0):
                 print ', '.join(shutterTimes)
 		os.system("mkdir hdr_src")
                 button = "0"
+                print "Prepare (10 sec)..."
+                time.sleep(10);
 		while button != "q":
 			ctr=ctr+1
 			os.system("mkdir hdr_src/"+str(ctr))
-			os.system("cp list.txt hdr_src/"+str(ctr)+"/")
+			#os.system("cp list.txt hdr_src/"+str(ctr)+"/")
 			os.system("sudo sispmctl -o 1")
 			os.system("sudo sispmctl -o 2")
 			os.system("sudo sispmctl -f 3")
 			for i in shutterTimes:
                             print "gphoto2 --set-config-index /main/capturesettings/shutterspeed="+i+" --capture-image-and-download --filename='hdr_src/"+str(ctr)+"/"+i+".jpg' 2>/dev/null"
                             os.system("gphoto2 --set-config-index /main/capturesettings/shutterspeed="+i+" --capture-image-and-download --filename='hdr_src/"+str(ctr)+"/"+i+".jpg' 2>/dev/null")
+                        writeLists("hdr_src/"+str(ctr)+"/")
 			ctr=ctr+1
 			os.system("mkdir hdr_src/"+str(ctr))
-			os.system("cp list.txt hdr_src/"+str(ctr)+"/")
+			#os.system("cp list.txt hdr_src/"+str(ctr)+"/")
 			send('4','turning_holder..done')
 			os.system("sudo sispmctl -f 1")
 			os.system("sudo sispmctl -f 2")
 			os.system("sudo sispmctl -o 3")
-			time.sleep(1)
+			time.sleep(3)
 			shctr=1
 			for i in shutterTimes:
 				shctr = shctr+1
 				os.system("gphoto2 --set-config-index /main/capturesettings/shutterspeed="+i+" --capture-image-and-download --filename='hdr_src/"+str(ctr)+"/"+i+".jpg' 2>/dev/null")
+                        writeLists("hdr_src/"+str(ctr)+"/")
 			send('4','turning_holder..done')
-			button = raw_input("Press any button to continue but 'q' for leaving");
+                        send('1',"button_pressed..done")
+			#button = raw_input("Press any button to continue but 'q' for leaving");
+                       
 	elif user_input == 5:
 		if mode != 5:
 			os.system("(cd /home/pi/Documents/Arduino/Ino/; ino upload)")
