@@ -5,6 +5,16 @@ import serial
 from PIL import Image
 from PIL.ExifTags import TAGS
 
+class bcolors:
+    HEADER = '\033[95m'
+    SEND = '\033[94m'
+    RECEIVE = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
 def writeLists (D):
     outfile = open(D+"list.txt",'w')
     for f in os.listdir(D):
@@ -36,23 +46,23 @@ def menu ():
 	return input("Your selection: ")
 
 def connect (item):
-	print("Connecting to Arduino...")
+	print(bcolors.HEADER + "Connecting to Arduino..."+bcolors.ENDC)
 	response = ''
 	while 'Hello Pi' not in response:
 		ser.write(item)
 		response = ser.readline()
-		print "Arduino: " + response
+		print bcolors.RECEIVE "Arduino: " + response + bcolors.ENDC
 	print("Connection established.")
 
 
 def send (signal, check):
 	response = ''
 	while check not in response:
-		print "Sending signal " + signal + "..."
+		print bcolors.SEND + "Sending signal " + signal + "..." + bcolors.ENDC
 		ser.write(signal)
 		response = ser.readline()
 		print str(response)
-        print "Signal received."
+        print bcolors.RECEIVE + "Signal received." + bcolors.ENDC
 
 def waitForArduino (word):
 	response = ''
@@ -61,9 +71,9 @@ def waitForArduino (word):
 		response = ser.readline()
 
 def init ():
-	print("Initializing Arduino...")
+	print(bcolors.HEADER + "Initializing Arduino...")
 	print("Moving camera holder to start position")
-	send('4','turning_holder..done')
+	send('4','turning_holder..done' + bcolors.ENDC)
 
 mode=0
 user_input = 1
@@ -197,7 +207,7 @@ while (user_input!=0):
                 print ', '.join(shutterTimes)
 		os.system("mkdir hdr_src")
                 button = "0"
-                print "Prepare (10 sec)..."
+                print bcolors.WARNING + "Prepare (10 sec)..." + bcolors.ENDC
                 time.sleep(10);
 		while button != "q":
 			ctr=ctr+1
@@ -207,9 +217,9 @@ while (user_input!=0):
 			os.system("sudo sispmctl -o 2")
 			os.system("sudo sispmctl -f 3")
 			for i in shutterTimes:
-                            print "gphoto2 --set-config-index /main/capturesettings/shutterspeed="+i+" --capture-image-and-download --filename='hdr_src/"+str(ctr)+"/"+i+".jpg' 2>/dev/null"
+                            print bcolors.SEND + "gphoto2 --set-config-index /main/capturesettings/shutterspeed="+i+" --capture-image-and-download --filename='hdr_src/"+str(ctr)+"/"+i+".jpg' 2>/dev/null" + bcolors.ENDC
                             os.system("gphoto2 --set-config-index /main/capturesettings/shutterspeed="+i+" --capture-image-and-download --filename='hdr_src/"+str(ctr)+"/"+i+".jpg' 2>/dev/null")
-                        writeLists("hdr_src/"+str(ctr)+"/")
+            writeLists("hdr_src/"+str(ctr)+"/")
 			ctr=ctr+1
 			os.system("mkdir hdr_src/"+str(ctr))
 			#os.system("cp list.txt hdr_src/"+str(ctr)+"/")
@@ -222,11 +232,11 @@ while (user_input!=0):
 			for i in shutterTimes:
 				shctr = shctr+1
 				os.system("gphoto2 --set-config-index /main/capturesettings/shutterspeed="+i+" --capture-image-and-download --filename='hdr_src/"+str(ctr)+"/"+i+".jpg' 2>/dev/null")
-                        writeLists("hdr_src/"+str(ctr)+"/")
+            writeLists("hdr_src/"+str(ctr)+"/")
 			send('4','turning_holder..done')
-                        send('1',"button_pressed..done")
+            send('1',"button_pressed..done")
 			#button = raw_input("Press any button to continue but 'q' for leaving");
-                       
+
 	elif user_input == 5:
 		if mode != 5:
 			os.system("(cd /home/pi/Documents/Arduino/Ino/; ino upload)")
