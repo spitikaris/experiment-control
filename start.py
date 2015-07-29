@@ -65,6 +65,7 @@ def send (signal, check):
 		print str(response)
         print bcolors.RECEIVE + "Signal received." + bcolors.ENDC
 
+Servo=[]
 def turn_holder (aim):
     print(bcolors.HEADER + "Turning camera holder" + bcolors.ENDC)
     if aim=='cover':
@@ -84,7 +85,6 @@ def waitForArduino (word):
 	while word not in response:
 		ser.write('0')
 		response = ser.readline()
-Servo=[]
 def init ():
 	print(bcolors.HEADER + "Initializing Arduino...")
 	print("Moving camera holder to start position")
