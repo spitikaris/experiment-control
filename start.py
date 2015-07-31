@@ -62,21 +62,16 @@ def send (signal, check):
 		print bcolors.SEND + "Sending signal " + signal + "..." + bcolors.ENDC
 		ser.write(signal)
 		response = ser.readline()
-		print str(response)
+		print bcolors.RECEIVE + str(response) + bcolors.ENDC
         print bcolors.RECEIVE + "Signal received." + bcolors.ENDC
 
 Servo=[]
 def turn_holder (aim):
     print(bcolors.HEADER + "Turning camera holder" + bcolors.ENDC)
     if aim=='cover':
-        Servo.start(10)
-        for ctr in range(1,90):
-            time.sleep(0.01)
+        send('4','turning_holder..done')
     elif aim!='cover':
-        Servo.start(5)
-        for ctr in range(1,90):
-            time.sleep(0.01)
-    Servo.stop()
+        send('5','turning_holder..done')
 
 
 
@@ -215,7 +210,6 @@ while (user_input!=0):
 		print("Enter password on mp-tresca to copy images in home directory")
 		os.system("scp -r "+expName+ " spitikaris@mp-tresca:FNA/data/")
 	elif user_input == 4:
-                turn_holder('uncover')
 		ctr=0
 		print "HDRI capture mode"
 		if mode != 4:
@@ -223,7 +217,8 @@ while (user_input!=0):
                         print "Establishing connection to Arduino..."
                         ser = serial.Serial('/dev/ttyACM0', 9600)
                         time.sleep(3);
-		connect('4')
+		connect('8')
+                turn_holder('uncover')
 		print "Enter shutter time choices. Press 'c' to continue: "
 		enteredNo = raw_input("Next number (c to exit): ")
 		shutterTimes = []
