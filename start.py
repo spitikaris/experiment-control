@@ -6,6 +6,20 @@ from PIL import Image
 from PIL.ExifTags import TAGS
 import RPi.GPIO as GPIO
 
+#Raspberry Motorshield
+from Adafruit_MotorHAT import Adafruit_MotorHAT, Adafruit_DCMotor, Adafruit_StepperMotor
+import atexit
+
+#Initializing Camera Motor
+mh=Adafruit_MotorHAT(addr=0x60)
+def turnOffMotors():
+    mh.getMotor(1).run(Adafruit_MotorHAT.RELEASE)
+    mh.getMotor(2).run(Adafruit_MotorHAT.RELEASE)
+    mh.getMotor(3).run(Adafruit_MotorHAT.RELEASE)
+    mh.getMotor(4).run(Adafruit_MotorHAT.RELEASE)
+
+atexit.register(turnOffMotors)
+
 class bcolors:
     HEADER = '\033[95m'
     SEND = '\033[94m'
@@ -48,6 +62,7 @@ def menu ():
 
 def connect (item):
 	print(bcolors.HEADER + "Connecting to Arduino..."+bcolors.ENDC)
+        print(bcolors.HEADER + "Sending "+ item + bcolors.ENDC)
 	response = ''
 	while 'Hello Pi' not in response:
 		ser.write(item)
@@ -68,9 +83,9 @@ def send (signal, check):
 Servo=[]
 def turn_holder (aim):
     print(bcolors.HEADER + "Turning camera holder" + bcolors.ENDC)
-    if aim=='cover':
+    if aim=='uncover':
         send('4','turning_holder..done')
-    elif aim!='cover':
+    elif aim=='cover':
         send('5','turning_holder..done')
 
 
@@ -80,12 +95,13 @@ def waitForArduino (word):
 	while word not in response:
 		ser.write('0')
 		response = ser.readline()
-def init ():
+def init (stage):
 	print(bcolors.HEADER + "Initializing Arduino...")
-	print("Moving camera holder to start position")
-        GPIO.setmode(GPIO.BOARD)
-        GPIO.setwarnings(False)
-        GPIO.setup(40,GPIO.OUT)
+        if stage:
+	    print("Moving camera holder to start position")
+            GPIO.setmode(GPIO.BOARD)
+            GPIO.setwarnings(False)
+            GPIO.setup(40,GPIO.OUT)
         Servo=GPIO.PWM(40,50)
 	#send('4','turning_holder..done' + bcolors.ENDC)
         Servo.start(7)
@@ -95,8 +111,12 @@ def init ():
         for Counter in range(20):
             time.sleep(0.01);
         Servo.stop()
+        print(bgcolors.HEADER + "Initializing x-y-stage" + bcolors.ENDC)
 
 
+
+x_stepper = mh.getStepper(200,1)
+x_stepper.setSpeed(200)
 mode=0
 user_input = 1
 ser = serial.Serial('/dev/ttyACM0', 9600)
@@ -110,7 +130,12 @@ while (user_input!=0):
 		mode = 1
 		print("Direct control is active.")
 	elif user_input == 2:
-		connect('2')
+		if mode != 2:
+			os.system("(cd /home/pi/Documents/Arduino/CompressionIno/; ino upload)")
+                        ser = serial.Serial('/dev/ttyACM0', 9600)
+                        time.sleep(3);
+		mode = 2
+		connect('7')
 		print("Compression experiment...")
 		expName = raw_input("Enter name of experiment: ")
 		os.system("mkdir "+expName)
@@ -119,25 +144,24 @@ while (user_input!=0):
 		sidelength = input ("Container sidelength: ")
 		sidelength = sidelength/100
 		STEPSPERCM = 1000.
-		init()
 		position = 0
 	        f = open(expName + '/cVolume.dd', 'w')
 		ctr=0
 		while position < steps:
 			print "Current position: " + str(position)
 			print("Taking photos...")
-			os.system("sudo sispmctl -o 1")
-			os.system("sudo sispmctl -o 2")
+                        turn_holder('uncover')
+			os.system("sispmctl -o 1")
+			os.system("sispmctl -o 2")
 			os.system("gphoto2 --set-config-index /main/capturesettings/shutterspeed=23 --capture-image-and-download --filename='"+expName+"/"+expName+str(ctr)+".jpg' 2>/dev/null")
 			ctr = ctr+1
 			time.sleep(2)
 			os.system("sispmctl -f 1")
 			os.system("sispmctl -f 2")
-			send('4','turning_holder..done')
+                        turn_holder('cover')
 			os.system("gphoto2 --set-config-index /main/capturesettings/shutterspeed=19 --capture-image-and-download --filename='"+expName+"/"+expName+str(ctr)+".jpg' 2>/dev/null")
 			ctr=ctr+1
 			time.sleep(2)
-			send('4', 'turning_holder..done')
 			print("Going to new position...")
 			for i in range(1, stepsPerStep+1, 1):
 				send('6', 'step..done');
@@ -161,8 +185,10 @@ while (user_input!=0):
 		if mode != 3:
 			os.system("(cd /home/pi/Documents/Arduino/DecompressionIno/; ino upload)")
                         ser = serial.Serial('/dev/ttyACM0', 9600)
+                        time.sleep(3);
 		mode = 3
 		connect('3')
+                send('3','Procedure_started')
 		print("Decompression experiment...")
 		expName = raw_input("Enter name of experiment: ")
 		os.system("mkdir "+expName)
@@ -171,25 +197,24 @@ while (user_input!=0):
 		sidelength = input ("Container sidelength: ")
 		sidelength = sidelength/100
 		STEPSPERCM = 1000.
-		init()
 		position = 0
 	        f = open(expName + '/cVolume.dd', 'w')
 		ctr=0
 		while position < steps:
 			print "Current position: " + str(position)
 			print("Taking photos...")
+                        turn_holder('uncover')
 			os.system("sispmctl -o 1")
 			os.system("sispmctl -o 2")
-			os.system("gphoto2 --set-config-index /main/capturesettings/shutterspeed=23 --capture-image-and-download --filename='"+expName+"/"+expName+str(ctr)+".jpg' 2>/dev/null")
+			os.system("gphoto2 --set-config-index /main/capturesettings/shutterspeed=18 --capture-image-and-download --filename='"+expName+"/"+expName+str(ctr)+".jpg' 2>/dev/null")
 			ctr = ctr+1
-			time.sleep(2)
+			time.sleep(5)
 			os.system("sispmctl -f 1")
 			os.system("sispmctl -f 2")
-			send('4','turning_holder..done')
-			os.system("gphoto2 --set-config-index /main/capturesettings/shutterspeed=19 --capture-image-and-download --filename='"+expName+"/"+expName+str(ctr)+".jpg' 2>/dev/null")
+                        turn_holder('cover')
+			os.system("gphoto2 --set-config-index /main/capturesettings/shutterspeed=18 --capture-image-and-download --filename='"+expName+"/"+expName+str(ctr)+".jpg' 2>/dev/null")
 			ctr=ctr+1
 			time.sleep(2)
-			send('4', 'turning_holder..done')
 			print("Going to new position...")
 			for i in range(1, stepsPerStep+1, 1):
 				send('6', 'step..done');
@@ -197,7 +222,7 @@ while (user_input!=0):
 				time.sleep(1)
 				sidelength = sidelength + 1./(STEPSPERCM*100)
 			f.write(str(sidelength*sidelength)+'\n')
-			send('5', 'agitation..done')
+			send('8', 'agitation..done')
        	 	f.close()
 		raw_input("Press RETURN to move the walls to the initial position...")
 		send('7', 'returned');
@@ -210,6 +235,9 @@ while (user_input!=0):
 		print("Enter password on mp-tresca to copy images in home directory")
 		os.system("scp -r "+expName+ " spitikaris@mp-tresca:FNA/data/")
 	elif user_input == 4:
+                X_TOT = 1140
+                Y_TOT = 1140
+                x_steps = 5
 		ctr=0
 		print "HDRI capture mode"
 		if mode != 4:
@@ -227,37 +255,52 @@ while (user_input!=0):
 			enteredNo = raw_input("Next number (c to exit): ")
                 print("shutter time choices are ")
                 print ', '.join(shutterTimes)
+                x_steps = input("Number of steps in x-direction: ")
 		os.system("mkdir hdr_src")
                 button = "0"
                 print bcolors.WARNING + "Prepare (10 sec)..." + bcolors.ENDC
                 time.sleep(10);
+                ctr = 0 
 		while button != "q":
+                    for x in range(1,x_steps):
 			ctr=ctr+1
 			os.system("mkdir hdr_src/"+str(ctr))
 			#os.system("cp list.txt hdr_src/"+str(ctr)+"/")
 			os.system("sudo sispmctl -o 1")
 			os.system("sudo sispmctl -o 2")
 			os.system("sudo sispmctl -f 3")
+                        time.sleep(1)
 			for i in shutterTimes:
-                            print bcolors.SEND + "gphoto2 --set-config-index /main/capturesettings/shutterspeed="+i+" --capture-image-and-download --filename='hdr_src/"+str(ctr)+"/"+i+".jpg' 2>/dev/null" + bcolors.ENDC
-                            os.system("gphoto2 --set-config-index /main/capturesettings/shutterspeed="+i+" --capture-image-and-download --filename='hdr_src/"+str(ctr)+"/"+i+".jpg' 2>/dev/null")
+                            os.system("gphoto2 --set-config-index \
+                                    /main/capturesettings/shutterspeed="+i+" \
+                                    --capture-image-and-download \
+                                    --filename='hdr_src/"+str(ctr)+"/"+i+".jpg' \
+                                    2>/dev/null")
                         writeLists("hdr_src/"+str(ctr)+"/")
-			ctr=ctr+1
-			os.system("mkdir hdr_src/"+str(ctr))
-			#os.system("cp list.txt hdr_src/"+str(ctr)+"/")
+                        ctr=ctr+1
+                        os.system("mkdir hdr_src/"+str(ctr))
+                        #os.system("cp list.txt hdr_src/"+str(ctr)+"/")
                         turn_holder('cover')
-			send('4','turning_holder..done')
-			os.system("sudo sispmctl -f 1")
-			os.system("sudo sispmctl -f 2")
-			os.system("sudo sispmctl -o 3")
-			time.sleep(3)
-			for i in shutterTimes:
-				shctr = shctr+1
-				os.system("gphoto2 --set-config-index /main/capturesettings/shutterspeed="+i+" --capture-image-and-download --filename='hdr_src/"+str(ctr)+"/"+i+".jpg' 2>/dev/null")
+                        os.system("sudo sispmctl -f 1")
+                        os.system("sudo sispmctl -f 2")
+                        os.system("sudo sispmctl -o 3")
+                        time.sleep(3)
+                        for i in shutterTimes:
+                                os.system("gphoto2 --set-config-index \
+                                        /main/capturesettings/shutterspeed="+i+" \
+                                        --capture-image-and-download \
+                                        --filename='hdr_src/"+str(ctr)+"/"+i+".jpg' \
+                                        2>/dev/null")
                         writeLists("hdr_src/"+str(ctr)+"/")
                         turn_holder('uncover')
-                        send('1',"button_pressed..done")
-			#button = raw_input("Press any button to continue but 'q' for leaving");
+                        x_stepper.step(int(X_TOT/x_steps), Adafruit_MotorHAT.BACKWARD,
+                                Adafruit_MotorHAT.DOUBLE);
+                        time.sleep(1)
+                    x_stepper.step(int(X_TOT-X_TOT/x_steps), Adafruit_MotorHAT.FORWARD, \
+                            Adafruit_MotorHAT.DOUBLE);
+                    print "Waiting for confirmation..."
+                    send('1',"button_pressed..done")
+                    #button = raw_input("Press any button to continue but 'q' for leaving");
 
 	elif user_input == 5:
 		if mode != 5:
