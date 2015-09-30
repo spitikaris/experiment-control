@@ -85,8 +85,10 @@ def turn_holder (aim):
     print(bcolors.HEADER + "Turning camera holder" + bcolors.ENDC)
     if aim=='uncover':
         send('4','turning_holder..done')
-    elif aim=='cover':
+    elif aim=='right-handed':
         send('5','turning_holder..done')
+    elif aim=='left-handed':
+	send('51', 'turning_holder..done')
 
 
 
@@ -129,6 +131,19 @@ while (user_input!=0):
 			os.system("(cd /home/pi/Documents/Arduino/StepperControlIno/; ino upload)")
 		mode = 1
 		print("Direct control is active.")
+		uin = raw_input("Enter filename  to take a photo or <q> to quit...",'s')
+		if uin != 'q':
+                        turn_holder('uncover')
+			os.system("sispmctl -o 1")
+			os.system("sispmctl -o 2")
+			os.system("gphoto2 --set-config-index /main/capturesettings/shutterspeed=18 --capture-image-and-download --filename='"+uin+".jpg 2>/dev/null")
+			time.sleep(5)
+			os.system("sispmctl -f 1")
+			os.system("sispmctl -f 2")
+                        turn_holder('cover')
+			os.system("gphoto2 --set-config-index /main/capturesettings/shutterspeed=18 --capture-image-and-download --filename='"+uin+"RH.jpg' 2>/dev/null")
+			turn_holder('left-handed')
+			os.system("gphoto2 --set-config-index /main/capturesettings/shutterspeed=18 --capture-image-and-download --filename='"+uin+"LH.jpg' 2>/dev/null")
 	elif user_input == 2:
 		if mode != 2:
 			os.system("(cd /home/pi/Documents/Arduino/CompressionIno/; ino upload)")
@@ -213,6 +228,8 @@ while (user_input!=0):
 			os.system("sispmctl -f 2")
                         turn_holder('cover')
 			os.system("gphoto2 --set-config-index /main/capturesettings/shutterspeed=18 --capture-image-and-download --filename='"+expName+"/"+expName+str(ctr)+".jpg' 2>/dev/null")
+			turn_holder('left-handed')
+			os.system("gphoto2 --set-config-index /main/capturesettings/shutterspeed=18 --capture-image-and-download --filename='"+expName+"/"+expName+str(ctr)+"LH.jpg' 2>/dev/null")
 			ctr=ctr+1
 			time.sleep(2)
 			print("Going to new position...")
