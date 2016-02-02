@@ -4,6 +4,7 @@ import time
 import serial
 from PIL import Image
 from PIL.ExifTags import TAGS
+from VariableDefs import *
 
 #Constants:
 lisspeed = 26 # 32 for only LED
@@ -236,16 +237,16 @@ while (user_input!=0):
 		    turn_holder('uncover')
 		    os.system("sispmctl -o 2")
 		    os.system("sispmctl -f 3")
-		    os.system("gphoto2 --set-config-index /main/capturesettings/shutterspeed=" + str(lisspeed) + " --capture-image-and-download --filename='"+expName+"/"+expName+str(ctr)+".jpg' 2>/dev/null")
+		    take_photo(lisspeed,expName+"/"+expName+str(ctr)+".jpg")
 		    ctr = ctr+1
 		    time.sleep(5)
 		    os.system("sispmctl -f 1")
 		    os.system("sispmctl -f 2")
 		    os.system("sispmctl -o 3")
 		    turn_holder('right-handed')
-		    os.system("gphoto2 --set-config-index /main/capturesettings/shutterspeed="+str(disspeed)+ " --capture-image-and-download --filename='"+expName+"/"+expName+str(ctr)+"LH.jpg' 2>/dev/null")
+		    take_photo(disspeed,expName+"/"+expName+str(ctr)+".jpg")
 		    turn_holder('left-handed')
-		    os.system("gphoto2 --set-config-index /main/capturesettings/shutterspeed="+str(disspeed)+" --capture-image-and-download --filename='"+expName+"/"+expName+str(ctr)+".jpg' 2>/dev/null")
+		    take_photo(disspeed,expName+"/"+expName+str(ctr)+".jpg")
 		    ctr=ctr+1
 		    time.sleep(2)
 		    print("Going to new position...")
@@ -306,7 +307,7 @@ while (user_input!=0):
                 turn_holder('uncover')
                 os.system("sispmctl -o 2")
                 os.system("sispmctl -f 3")
-                os.system("gphoto2 --set-config-index /main/capturesettings/shutterspeed="+str(lisspeed)+" --capture-image-and-download --filename='"+expName+"/"+expName+str(ctr)+".jpg' 2>/dev/null")
+                take_photo(lisspeed,expName+"/"+expName+str(ctr)+".jpg")
                 ctr = ctr+1
                 time.sleep(5)
                 os.system("sispmctl -f 1")
@@ -315,7 +316,7 @@ while (user_input!=0):
                 turn_holder('right-handed')
            #     os.system("gphoto2 --set-config-index /main/capturesettings/shutterspeed="+str(disspeed)+" --capture-image-and-download --filename='"+expName+"/"+expName+str(ctr)+"LH.jpg' 2>/dev/null")
                 turn_holder('left-handed')
-                os.system("gphoto2 --set-config-index /main/capturesettings/shutterspeed="+str(disspeed)+" --capture-image-and-download --filename='"+expName+"/"+expName+str(ctr)+".jpg' 2>/dev/null")
+                take_photo(disspeed,expName+"/"+expName+str(ctr)+".jpg")
                 ctr=ctr+1
                 time.sleep(2)
                 print("Going to new position...")
@@ -354,9 +355,7 @@ while (user_input!=0):
 #		enteredNo = raw_input("Next number (c to exit): ")
 #		shutterTimes = []
 #		while enteredNo != "c":
-#			shutterTimes.append(enteredNo)
-#			enteredNo = raw_input("Next number (c to exit): ")
-#                print("shutter time choices are ")
+#			shutterTim("shutter time choices are ")
 #                print ', '.join(shutterTimes)
                 x_steps = input("Number of steps in x-direction: ")
                 y_steps = input("Number of steps in y-direction: ")
@@ -416,3 +415,23 @@ while (user_input!=0):
 			os.system("(cd /home/piti_se/Arduino/SingleWallIno/; ino upload)")
 		mode = 6
 		print "Uploading single wall control"
+
+def one_photo(shutterspeed, filename):
+    os.system("gphoto2 --set-config-index /main/capturesettings/shutterspeed=" + str(shutterspeed) + " --capture-image-and-download --filename='"+filename+".jpg' 2>/dev/null")
+
+def take_photo():
+    print("Taking photos...")
+    os.system("sispmctl -o 1")
+    turn_holder('uncover')
+    os.system("sispmctl -o 2")
+    os.system("sispmctl -f 3")
+    take_photo(lisspeed,expName+"/"+expName+str(ctr)+".jpg")
+    ctr = ctr+1
+    time.sleep(5)
+    os.system("sispmctl -f 1")
+    os.system("sispmctl -f 2")
+    os.system("sispmctl -o 3")
+    turn_holder('right-handed')
+#     os.system("gphoto2 --set-config-index /main/capturesettings/shutterspeed="+str(disspeed)+" --capture-image-and-download --filename='"+expName+"/"+expName+str(ctr)+"LH.jpg' 2>/dev/null")
+    turn_holder('left-handed')
+    take_photo(disspeed,expName+"/"+expName+str(ctr)+".jpg")
