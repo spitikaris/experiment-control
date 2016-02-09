@@ -102,9 +102,12 @@ class ArduinoCommunicator:
             response = self.ser.readline()
         print(cg.bcolors.RECEIVE + response)
         print(cg.bcolors.ENDC)
-    def move_walls(self, steplength):
-        buf = "$move_walls%%%d&\n" % steplength
+    def shear(self, steplength):
+        buf = "$shear%%%d&\n" % steplength
         self.send(buf,"Moving...", "done")
+    def compress(self, steplength):
+        buf = "$compress%%%d&\n" % steplength
+        self.send(buf, "Compressing...", "done.")
     def agitate(self, forSeconds):
         buf = "$agitate%%%d&\n" % forSeconds
         self.send(buf, "Agitating...", "done")
@@ -119,7 +122,7 @@ class ArduinoCommunicator:
         self.send(buf,"Turning to", "done.")
 
 
-def take_photo2(grid,prefix,dark,arduino):
+def take_photo2(grid,prefix,dark,arduino,reverse=0):
     if not dark:
         speed = 32 # 32 for only LED
     else:
@@ -129,9 +132,9 @@ def take_photo2(grid,prefix,dark,arduino):
     #cg.moveto(grid.corner[0],grid.corner[1])
     time.sleep(1)
     ctr = 0
-    for i in grid.points_in_x():
-        for j in grid.points_in_y()[::pow(-1,ctr)]:
-            cg.moveto(i,j)
+    for i,y in enumerate(grid.points_in_y()[::pow(-1,reverse)]):
+        for j,x in enumerate(grid.points_in_x()[::pow(-1,i)*pow(-1,reverse)]):
+            cg.moveto(x,y)
             one_photo(cam, cont, speed, prefix+str(ctr))
             ctr = ctr+1
 
