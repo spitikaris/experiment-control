@@ -73,8 +73,13 @@ def exit_camera():
 
 class ArduinoCommunicator:
     ser = serial.Serial('/dev/ttyACM2', 9600)
-    def __init__(self, port):
-        os.system("(cd /home/piti_se/Arduino/controlledShear/; ino upload -p "+port+")")
+    def __init__(self, port, controlMode):
+        if controlMode == "shear":
+            os.system("(cd /home/piti_se/Arduino/controlledShear/; ino upload -p "+port+")")
+        elif controlMode == "direct":
+            os.system("(cd /home/piti_se/Arduino/StepperControlIno/; ino upload -p "+port+")")
+        elif controlMode == "singleWall":
+            os.system("(cd /home/piti_se/Arduino/GotoIno/; ino upload -p "+port+")")
         self.ser = serial.Serial(port, 9600)
         print cg.bcolors.UNDERLINE+"experiment control is mounted on port "+str(port)+cg.bcolors.ENDC
         time.sleep(3);
@@ -118,7 +123,7 @@ def take_photo2(grid,prefix,dark,arduino):
     if not dark:
         speed = 32 # 32 for only LED
     else:
-        speed = 12
+        speed = 14
     cam, cont = init_camera()
     cg.initWithACMPort(3)
     #cg.moveto(grid.corner[0],grid.corner[1])

@@ -15,9 +15,17 @@ class bcolors:
     UNDERLINE = '\033[4m'
 
 
+def directControl():
+    homeNoWait()
+    arduino = ArduinoCommunicator('/dev/ttyACM2','direct')
+    print("Direct Control...")
+def singleWall():
+    homeNoWait()
+    arduino = ArduinoCommunicator('/dev/ttyACM2','singleWall')
+    print("Single Wall...")
 def shear():
     homeNoWait()
-    arduino = ArduinoCommunicator('/dev/ttyACM2')
+    arduino = ArduinoCommunicator('/dev/ttyACM2','shear')
     print("Shear experiment...")
     exp = experimentGrapper();
     exp.steplength = input ("Steplength: ")
