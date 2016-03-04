@@ -50,11 +50,10 @@ def one_photo(camera, context, value, filename):
         print('Parameter out of range')
         return 1
     # set value
-    value = gp.check_result(gp.gp_widget_get_choice(shutterspeed, value))
-    gp.check_result(gp.gp_widget_set_value(shutterspeed, value))
-    # set config
-    gp.check_result(gp.gp_camera_set_config(camera, config, context))
-    print('Capturing image')
+    speedvalue = gp.check_result(gp.gp_widget_get_choice(shutterspeed, value))
+
+    gp.check_result(gp.gp_widget_set_value(shutterspeed, speedvalue)) # set config gp.check_result(gp.gp_camera_set_config(camera, config, context))
+    print('Capturing image (shutterspeed=%d)' % value)
     file_path = gp.check_result(gp.gp_camera_capture(
         camera, gp.GP_CAPTURE_IMAGE, context))
 
@@ -72,7 +71,7 @@ def exit_camera():
 
 
 class ArduinoCommunicator:
-    ser = serial.Serial('/dev/ttyACM2', 9600)
+    ser = serial.Serial('/dev/ttyACM0', 9600)
     def __init__(self, port, controlMode):
         if controlMode == "shear":
             os.system("(cd /home/piti_se/Arduino/controlledShear/; ino upload -p "+port+")")
@@ -80,6 +79,8 @@ class ArduinoCommunicator:
             os.system("(cd /home/piti_se/Arduino/StepperControlIno/; ino upload -p "+port+")")
         elif controlMode == "singleWall":
             os.system("(cd /home/piti_se/Arduino/GotoIno/; ino upload -p "+port+")")
+        elif controlMode == "decompression":
+            os.system("(cd /home/piti_se/Arduino/controlledDecompression/; ino upload -p "+port+")")
         self.ser = serial.Serial(port, 9600)
         print cg.bcolors.UNDERLINE+"experiment control is mounted on port "+str(port)+cg.bcolors.ENDC
         time.sleep(3);
@@ -104,7 +105,7 @@ class ArduinoCommunicator:
         print(cg.bcolors.ENDC)
     def shear(self, steplength):
         buf = "$shear%%%d&\n" % steplength
-        self.send(buf,"Moving...", "done")
+        self.send(buf,"Shearing", "done")
     def compress(self, steplength):
         buf = "$compress%%%d&\n" % steplength
         self.send(buf, "Compressing...", "done.")
@@ -120,23 +121,36 @@ class ArduinoCommunicator:
             positionNo = 155
         buf = "$turn_holder_to_pos%%%d&\n" % positionNo
         self.send(buf,"Turning to", "done.")
+    def turn_holder_to(self, position):
+        buf = "$turn_holder_to_pos%%%d&\n" % position
+        self.send(buf,"Turning to", "done.")
 
 
 def take_photo2(grid,prefix,dark,arduino,reverse=0):
-    if not dark:
+    if dark == 0:
         speed = 32 # 32 for only LED
     else:
         speed = 14
+    os.system("gphoto2 --set-config-index /main/capturesettings/shutterspeed=" + str(speed));
     cam, cont = init_camera()
-    cg.initWithACMPort(3)
+    cg.init()
     #cg.moveto(grid.corner[0],grid.corner[1])
     time.sleep(1)
     ctr = 0
+    y_i = range(0,len(grid.points_in_y()))[::pow(-1,reverse)]
+    if reverse == 1:
+        ctr = len(grid.points_in_y())*len(grid.points_in_x())-1
     for i,y in enumerate(grid.points_in_y()[::pow(-1,reverse)]):
+        x_i = range(0,len(grid.points_in_x()))[::pow(-1,i)*pow(-1,reverse)]
         for j,x in enumerate(grid.points_in_x()[::pow(-1,i)*pow(-1,reverse)]):
             cg.moveto(x,y)
-            one_photo(cam, cont, speed, prefix+str(ctr))
-            ctr = ctr+1
+            print "at pos: x=%d,y=%d" % (x_i[j],y_i[i])
+            one_photo(cam, cont, speed, prefix+"_x"+str(x_i[j])+"y"+str(y_i[i]))
+            if reverse == 0:
+                ctr = ctr+1
+            else:
+                ctr = ctr-1
+
 
 def take_photo(grid,prefix):
     cg.initWithACMPort(3)

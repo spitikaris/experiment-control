@@ -1,7 +1,6 @@
 import serial
 import time
 
-arduinoPort = 2
 
 class bcolors:
     HEADER = '\033[95m'
@@ -12,17 +11,15 @@ class bcolors:
     ENDC = '\033[0m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
-ser = serial.Serial('/dev/ttyACM'+str(arduinoPort), 57600)
 
-def init():
+class CameraGrid:
+  posx = 0
+  posy = 0
+  def __init__(self,acmport):
     global ser
-    ser = serial.Serial('/dev/ttyACM'+str(arduinoPort), 57600)
-def initWithACMPort(acmport):
-    path = '/dev/ttyACM'+str(acmport)
-    global ser
-    ser = serial.Serial(path, 57600)
+    ser = serial.Serial(str(acmport), 57600)
 
-def send(signal, check, doneResponse):
+  def send(self, signal, check, doneResponse):
     response = ''
     i = 0
     while check not in response:
@@ -42,25 +39,33 @@ def send(signal, check, doneResponse):
     print(bcolors.RECEIVE + response)
     print(bcolors.ENDC)
 
-def position():
+  def position(self):
     buf = "$position%&\n"
-    send(buf, "Present position", "--")
+    self.send(buf, "Present position", "--")
 
-def release():
+  def release(self):
     buf = "$release%&\n"
-    send(buf, "Releasing", "Motors turned")
+    self.send(buf, "Releasing", "Motors turned")
 
-def moveto(x,y):
+  def moveto(self,x,y):
     buf = "$move_to%%%d,%d&\n" % (x,y)
-    send(buf,"Moving", "finished")
+    self.send(buf,"Moving", "finished")
+    self.posx=x
+    self.posy=y
 
-def moveabout(x,y):
+  def moveabout(self,x,y):
     buf = "$shift_about%%%d,%d&\n" % (x,y)
-    send(buf,"Moving", "finished")
+    self.send(buf,"Moving", "finished")
+    self.posx+=x
+    self.poxy+=y
 
-def home():
+  def home(self):
     buf = "$go_home%&\n"
-    send(buf, "home position", "home.")
+    self.send(buf, "home position", "home.")
+    self.posx=0
+    self.posy=0
 
-def homeNoWait():
+  def homeNoWait(self):
     ser.write("$go_home%&\n")
+    self.posx=0
+    self.posy=0

@@ -1,7 +1,7 @@
 import os
 
 class photoframe:
-    corner = [1100,1140]
+    corner = [1100,1180]
     offset = 0
     width = 0
     height = 0

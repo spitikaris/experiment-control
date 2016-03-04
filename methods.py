@@ -25,15 +25,15 @@ def darkfield():
 
 def directControl():
     homeNoWait()
-    arduino = ArduinoCommunicator('/dev/ttyACM2','direct')
+    arduino = ArduinoCommunicator('/dev/ttyACM0','direct')
     print("Direct Control...")
 def singleWall():
     homeNoWait()
-    arduino = ArduinoCommunicator('/dev/ttyACM2','singleWall')
+    arduino = ArduinoCommunicator('/dev/ttyACM0','singleWall')
     print("Single Wall...")
 def shear():
     homeNoWait()
-    arduino = ArduinoCommunicator('/dev/ttyACM2','shear')
+    arduino = ArduinoCommunicator('/dev/ttyACM0','shear')
     print("Shear experiment...")
     exp = experimentGrapper();
     exp.steplength = input ("Steplength: ")
@@ -72,7 +72,7 @@ def shear():
 
 def decompression():
     homeNoWait()
-    arduino = ArduinoCommunicator('/dev/ttyACM2')
+    arduino = ArduinoCommunicator('/dev/ttyACM0', 'shear' )
     print("Decompression experiment...")
     exp = experimentGrapper();
     exp.steplength = input ("Steplength: ")
